@@ -55,7 +55,11 @@ export class CombatDock extends HandlebarsApplication {
     }
 
     get sortedCombatants() {
-        return Array.from(this.combat.combatants.contents.sort(this.combat._sortCombatants));
+        const sorted = Array.from(this.combat.combatants.contents.sort(this.combat._sortCombatants));
+        if (game.settings.get(MODULE_ID, "hideDefeated")) {
+            return sorted.filter(c => !c.isDefeated);
+        }
+        return sorted;
     }
 
     get trueCarousel() {
@@ -223,7 +227,7 @@ export class CombatDock extends HandlebarsApplication {
         }, 10);
     }
 
-    autosize() {
+    autosize(combatantRevived = false) {
         const max = parseInt(game.settings.get(MODULE_ID, "portraitSize"));
         const aspect = game.settings.get(MODULE_ID, "portraitAspect");
         this._currentPortraitSize = {
@@ -234,7 +238,7 @@ export class CombatDock extends HandlebarsApplication {
         if (!this.autoFit) return document.documentElement.style.setProperty("--combatant-portrait-size", max + "px");
 
         const sizeModifier = game.settings.get(MODULE_ID, "floatingSize");
-        const combatantCount = this.sortedCombatants.length;
+        const combatantCount = this.sortedCombatants.length + (combatantRevived ? 1 : 0);
         let maxSpace, portraitSize;
         if (this.isVertical) {
             maxSpace = window.innerHeight * sizeModifier / 100;
@@ -255,6 +259,8 @@ export class CombatDock extends HandlebarsApplication {
         }
         const portrait = this.portraits.find((p) => p.combatant === combatant);
         if (portrait) portrait.renderInner();
+        const combatantRevived = updates.defeated === false;
+        this.autosize(combatantRevived);
     }
 
     updateCombatants() {
